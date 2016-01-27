@@ -8,6 +8,10 @@ local SSID = "YOURID"
 local WIFIKEY = "YOURKEY"
 local modeStation = true
 
+
+local powerPin, redPin, greenPin, bluePin = 4, 6, 7, 8
+	
+
 httpserver = function () 
 
 	start_init_color()
@@ -16,34 +20,44 @@ httpserver = function ()
     srv:listen(80,function(conn)         
 		conn:on("receive",function(conn,request)           
 			print("receive")
-			--print(request)	
+			print(request)	
 			
 			local rstr = string.match(request, 'r=%d+')
 			local gstr = string.match(request, 'g=%d+')
 			local bstr = string.match(request, 'b=%d+')
-
+			local onstr = string.match(request, 'on=%d')
+			
+			--Power On/Off
+			if onstr ~= nil then
+				print(onstr)
+				local onint = string.match(onstr, '%d')				
+				if onint ~= nil then
+					print(onint)
+					gpio.mode(powerPin, gpio.OUTPUT)
+					if onint == 1 then						
+						gpio.write(powerPin, gpio.HIGH)
+					else						
+						gpio.write(powerPin, gpio.LOW)
+					end				
+				end				
+			end
+			
+			--Set color to led			
 			if rstr ~= nil and  gstr ~= nil and  bstr ~= nil then
-
 				--print(rstr .. ' ' .. gstr .. ' ' .. bstr)
-
 				local rint = string.match(rstr, '%d+')
 				local gint = string.match(gstr, '%d+')
 				local bint = string.match(bstr, '%d+')
-
 				--print(rint .. ' ' .. gint .. ' ' .. bint)
-
 				if rint ~= nil and gint ~= nil and bint ~= nil then
 					print('R:' .. rint .. ' G:' .. gint .. ' B:' .. bint)
-
 					ledRGB(rint, gint, bint)
 				else
 					print('no rgb value in request (int)')
-				end
-				
+				end				
 			else
 				print('no rgb value in request')
 			end
-
 			
 			conn:send("200 ok");  
 			conn:close();
@@ -52,11 +66,10 @@ httpserver = function ()
 	
     end)  	
 	print('Server http on')		
+	start_animcolor()
 end    
 
 start_init_color = function() 
-
-	powerPin, redPin, greenPin, bluePin = 5, 6, 7, 8
 	
 	--Power pin 
 	gpio.mode(powerPin, gpio.OUTPUT)
@@ -69,6 +82,11 @@ start_init_color = function()
 	pwm.start(greenPin)
 	pwm.start(bluePin)
 	print('RGB led strip set on pin rgb 6 7 8')
+	
+	collectgarbage();
+end
+
+start_animcolor = function() 
 
 	ledRGB(255, 0, 0)
 	print('Rouge')
@@ -155,7 +173,6 @@ else
 
 	httpserver()
 end
-
 
 
 
